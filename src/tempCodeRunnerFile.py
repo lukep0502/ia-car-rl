@@ -1,0 +1,1 @@
+        self.last_angle = current_angle
