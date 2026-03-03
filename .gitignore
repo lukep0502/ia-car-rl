@@ -1,4 +1,14 @@
-.venv/
+# Python cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+.venv/
+
+# VS Code
 .vscode/
+
+# MacOS
+.DS_Store
