@@ -1,12 +1,21 @@
 import pygame
 from core.environment import Environment
 from rendering.game_renderer import GameRenderer
+from tracks.circular_track import CircularTrack
+from tracks.track1 import Track1
+
+WIDTH, HEIGHT = 800, 800
 
 
 def main():
 
-    env = Environment()
-    renderer = GameRenderer()
+    pygame.init()
+
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    track = Track1(WIDTH, HEIGHT)
+
+    env = Environment(WIDTH, HEIGHT, track)
+    renderer = GameRenderer(WIDTH, HEIGHT)
 
     running = True
 

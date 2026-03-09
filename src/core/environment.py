@@ -1,21 +1,23 @@
 import pygame
-from tracks.circular_track import CircularTrack
+from tracks import track
+
 from core.car import Car
 
-WIDTH, HEIGHT = 800, 600
 
 
 class Environment:
 
-    def __init__(self):
-        self.track = CircularTrack()
+    def __init__(self, width, height, track):
 
+
+        self.track = track
+        
         self.race_finished = False
 
         self.laps = 0
         self.max_laps = 3   
 
-        self.car = Car(WIDTH // 2, HEIGHT // 2 - 160)
+        self.car = self.track.car 
 
         self.total_progress = 0
         self.last_angle = self.track.get_angle(self.car.x, self.car.y)
@@ -25,18 +27,26 @@ class Environment:
         self.current_lap_time = 0
         self.best_lap_time = None
         self.total_time = 0
+        self.progress_state = 0
 
         self.last_position = (self.car.x, self.car.y)
+
+        if self.track.type == "procedural":
+            self.progress_state = {
+                "total_progress": 0,
+                "last_angle": self.track.get_angle(self.car.x, self.car.y)
+            }
+        else:
+            self.progress_state = {
+                "next_checkpoint": 0
+            }
+
+        
 
     def reset(self):
 
         self.laps = 0
         self.race_finished = False
-
-        self.car.x = WIDTH // 2
-        self.car.y = HEIGHT // 2 - 160
-        self.car.speed = 0
-        self.car.angle = 0
 
         self.last_position = (self.car.x, self.car.y)
 
@@ -45,7 +55,9 @@ class Environment:
         self.current_lap_time = 0
         self.best_lap_time = None
         self.total_time = 0
-        self.total_progress = 0
+
+        self.track.reset_car(self.car)
+        self.track.reset_progress_state()
 
         print("Corrida reiniciada!")
 
@@ -59,54 +71,51 @@ class Environment:
         self.total_time = (current_time - self.start_time) / 1000
         self.current_lap_time = (current_time - self.lap_start_time) / 1000
 
+        # salva posição anterior
+        self.last_position = (self.car.x, self.car.y)
+
+
         # Update car
         self.car.update(action)
 
         if self.check_collision():
-            self.car.speed = -1
-
-        # ===== Progress Logic =====
-
-        current_angle = self.track.get_angle(self.car.x, self.car.y)
-        delta = current_angle - self.last_angle
-
-        if delta > 180:
-            delta -= 360
-        elif delta < -180:
-            delta += 360
-
-        if delta < 0:
-            self.total_progress += abs(delta)
-
-        self.last_angle = current_angle
-
-        if self.total_progress < 0:
-            self.total_progress = 0
+            self.car.x, self.car.y = self.last_position
+            self.car.speed *= -0.4  # quica um pouco
 
         current_position = (self.car.x, self.car.y)
 
-        if self.track.crossed_finish_line(self.last_position, current_position):
+        self.progress_state, crossed = self.track.progress_logic(
+            self.progress_state,
+            self.last_position,
+            current_position
+        )
 
-            if self.total_progress >= 350:
+        if crossed:
+            if self.track.is_lap_complete(self.progress_state):
                 self.laps += 1
+                print(f"Lap {self.laps}")
 
-                lap_time = self.current_lap_time
+                # Atualiza tempo atual antes de comparar
+                self.current_lap_time = (
+                    pygame.time.get_ticks() - self.lap_start_time
+                ) / 1000
 
-                if self.best_lap_time is None or lap_time < self.best_lap_time:
-                    self.best_lap_time = lap_time
+                if self.best_lap_time is None or self.current_lap_time < self.best_lap_time:
+                    self.best_lap_time = self.current_lap_time
+                    print(f"New best lap: {self.best_lap_time:.2f}s")
 
-                print(f"Volta {self.laps} - {lap_time:.2f}s")
+                self.progress_state = self.track.reset_progress_state()
 
                 self.lap_start_time = pygame.time.get_ticks()
-                self.total_progress = 0
 
                 if self.laps >= self.max_laps:
                     self.race_finished = True
             else:
-                print("Cruzou linha mas não completou 360°")
+                print("Crossed but lap not complete")                
 
         self.last_position = current_position
 
+        
     def check_collision(self):
         for point in self.car.get_corners():
             if not self.track.is_on_track(point[0], point[1]):

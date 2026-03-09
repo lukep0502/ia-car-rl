@@ -1,8 +1,11 @@
 import pygame
+from tracks import track
+from tracks.circular_track import CircularTrack
 
 
 class GameRenderer:
-    def __init__(self, width=800, height=600):
+    def __init__(self, width, height):
+
         pygame.init()
         self.width = width
         self.height = height
@@ -15,10 +18,16 @@ class GameRenderer:
         self.font_big = pygame.font.SysFont(None, 72)
 
     def render(self, env):
-        self.screen.fill("black")
+
+        if env.track.type == "image-based":
+            self.display_track(env)
+        else:
+            self.screen.fill("black")
+        
 
         # Track
-        env.track.draw(self.screen)
+        if env.track.type == "procedural":
+            env.track.draw_track(self.screen)
 
         # Draw car
         self.draw_car(env.car)
@@ -26,40 +35,32 @@ class GameRenderer:
         # Progress bar
         self._draw_progress(env)
 
+        # Debug checkpoint and start line
+        if env.track.type == "image-based":
+            self.debug_draw(env)
+
         # UI
         self._draw_ui(env)
 
         pygame.display.flip()
 
     def _draw_progress(self, env):
-        bar_width = 200
-        bar_height = 20
-        bar_x = self.width - bar_width - 20
-        bar_y = 20
+        env.track._draw_progress(self.screen, env)
 
-        pygame.draw.rect(self.screen, "white",
-                         (bar_x, bar_y, bar_width, bar_height), 2)
-
-        progress_ratio = env.total_progress / 360
-        fill_width = bar_width * progress_ratio
-
-        pygame.draw.rect(
-            self.screen,
-            "green",
-            (bar_x, bar_y, fill_width, bar_height)
-        )
+    def debug_draw(self, env):
+        env.track.draw_debug(self.screen)
 
     def _draw_ui(self, env):
         lap_text = self.font_small.render(
-            f"Lap: {env.laps}/{env.max_laps}", True, "white")
+            f"Lap: {env.laps}/{env.max_laps}", True, "gray")
         self.screen.blit(lap_text, (20, 20))
 
         time_text = self.font_small.render(
-            f"Lap Time: {env.current_lap_time:.2f}s", True, "white")
+            f"Lap Time: {env.current_lap_time:.2f}s", True, "gray")
         self.screen.blit(time_text, (20, 50))
 
         total_text = self.font_small.render(
-            f"Total Time: {env.total_time:.2f}s", True, "white")
+            f"Total Time: {env.total_time:.2f}s", True, "gray")
         self.screen.blit(total_text, (20, 80))
 
         if env.best_lap_time:
@@ -75,7 +76,7 @@ class GameRenderer:
 
             # Título principal
             text1 = self.font_big.render(
-                "CORRIDA FINALIZADA", True, "white"
+                "CORRIDA FINALIZADA", True, "gray"
             )
             self.screen.blit(
                 text1,
@@ -116,3 +117,6 @@ class GameRenderer:
         rotated_rect = rotated.get_rect(center=rect.center)
 
         self.screen.blit(rotated, rotated_rect.topleft)
+
+    def display_track(self, env):
+        self.screen.blit(env.track.image, (0,0))
