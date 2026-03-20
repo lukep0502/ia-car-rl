@@ -1,76 +1,121 @@
-# IA-CAR 🚗🤖
+# IA-CAR
 
-Top-down racing simulator built with Pygame.
+Top-down racing simulator built with Pygame for reinforcement learning experiments.
 
-This project is designed as a **training environment for reinforcement learning agents**
-that will eventually be used to optimize lap times in a **3D Roblox racing game**.
+The current project focus is a **Q-learning driving agent** that learns on a 2D track using
+raycast sensors, checkpoint-based progress, lap timing, and diagnostic telemetry. The long-term
+goal remains transfer of the driving logic and racing-line concepts into a future 3D Roblox game.
 
-The current phase focuses on building a **2D simulation environment** where AI agents can
-learn driving behavior, track navigation and time optimization.
+## Current Status
 
----
+The simulator is no longer just a playable prototype. It now includes:
 
-# Project Vision
+- Manual driving mode
+- AI mode with headless training
+- Sensor-based state representation
+- Unified cross-track progress/alignment features
+- Q-learning with n-step updates and prioritized replay
+- Track diagnostics and debug overlays
+- Model persistence with training metrics snapshots
 
-The final goal of this project is to develop an **AI agent capable of achieving optimal lap times in a Roblox racing game**.
+## Main Features
 
-To achieve this, the development process is divided into stages:
+### Simulation Core
 
-1. Build a **2D simulation environment**
-2. Train and evaluate AI driving agents
-3. Develop sensor systems and reward functions
-4. Transition concepts to a **3D Roblox environment**
+- Top-down car physics with throttle, brake, and steering
+- Lap timing and multi-lap race flow
+- Collision detection against image masks and procedural geometry
+- Episode reset logic for training and gameplay
 
-The 2D simulator acts as a **controlled laboratory for experimentation** before moving to a full 3D environment.
+### Track System
 
----
+- Image-based track support (`Track1`)
+- Procedural track support
+- Circular, oval, and complex procedural layouts
+- Unified progress interface across track types
+- Checkpoint and finish-line validation
 
-# Current Features
+### AI Training Stack
 
-## Core Engine
+- Raycast sensor system
+- Normalized state representation
+- Reward system aligned with forward progress and safe speed
+- Experience replay buffer
+- n-step Q-learning updates
+- Weighted exploration for more useful action sampling
+- Diagnostic metrics for forward progress, wall proximity, exploration diversity, stuck rate, track progress, survival time, and progress efficiency
 
-- Car physics
-- Lap counting system
-- Direction validation
-- Timer system
-- Restart system
+### Tooling and Debug
 
-## Track System
+- Headless training path for better performance
+- In-game debug mode (`Q`) with runtime and saved-training metrics
+- Saved models now include a metrics snapshot for later inspection
+- Neutral HUD styling for readability on both dark and light tracks
 
-- Image-based tracks
-- Mask-based track boundaries
-- Finish line detection
-- Checkpoint system
+## Project Structure
 
-## Visual
+```text
+src/
+  ai/          agent, reward, normalization, trainer
+  core/        car and environment
+  rendering/   game renderer and overlays
+  sensors/     raycasting and sensor orchestration
+  tracks/      image-based and procedural tracks
+docs/
+  roadmap.md
+  training-metrics.md
+```
 
-- Top-down racing interface
-- Lap progress bar
-- Clean track visualization
+## Running
 
----
+### Requirements
 
-# Track Technology
+- Python 3.12+
+- `pygame`
+- `tqdm`
 
-Tracks are processed using **pygame masks**, allowing accurate detection of:
+Install dependencies:
 
-- track limits
-- finish line
-- checkpoints
+```bash
+pip install pygame tqdm
+```
 
-Example:
+Start the application:
 
-```python
-# track mask
-self.track_mask = pygame.mask.from_threshold(
-    self.image,
-    (255,255,255),
-    (1,1,1)
-)
+```bash
+python src/main.py
+```
 
-# finish line mask
-self.finish_mask = pygame.mask.from_threshold(
-    self.image,
-    (255,0,0),
-    (1,1,1)
-)
+## Modes
+
+### Manual Mode
+
+- Drive with `W`, `A`, `S`, `D`
+- Restart with `R`
+- Exit with `ESC`
+
+### AI Mode
+
+- Train from scratch or load a saved model
+- Headless training is used before opening the visual result
+- Toggle debug overlay with `Q`
+- Saved models restore both Q-table parameters and training metrics
+
+## Notes About Training
+
+- Current training entry point uses `Track1` by default in `src/main.py`
+- Procedural multi-track support exists in the trainer and track system
+- Diagnostic metrics are visible in terminal during training and in-game through debug mode
+- Old saved models created before metrics persistence will load without historical stats
+
+## Documentation
+
+- [Roadmap](docs/roadmap.md)
+- [Training Metrics](docs/training-metrics.md)
+
+## Near-Term Priorities
+
+- Improve lap completion consistency on `Track1`
+- Reduce collisions after the first quarter of the track
+- Expand evaluation across procedural tracks
+- Keep the debug and model-inspection workflow practical for iteration

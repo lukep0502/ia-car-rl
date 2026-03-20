@@ -78,6 +78,17 @@ class Track:
             f"{self.__class__.__name__} precisa implementar is_lap_complete()"
         )
 
+    def get_progress_features(self, car_pos, car_angle, progress_state):
+        """
+        Retorna uma representação unificada de progresso e alinhamento.
+
+        progress: 0.0 -> 1.0
+        angle_to_target: -1.0 -> 1.0
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} precisa implementar get_progress_features()"
+        )
+
     # ---------------------------------
     # CAR RESET
     # ---------------------------------
@@ -102,3 +113,7 @@ class Track:
         UI de progresso (opcional).
         """
         pass
+
+    def normalize_angle_to_target(self, target_angle_deg, car_angle_deg):
+        angle_diff = (target_angle_deg - car_angle_deg + 180.0) % 360.0 - 180.0
+        return max(-1.0, min(1.0, angle_diff / 180.0))

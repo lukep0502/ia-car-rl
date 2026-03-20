@@ -3,12 +3,20 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.pkl
 
 # Virtual environment
 .venv/
 
 # VS Code
 .vscode/
+src/tempCodeRunnerFile.py
 
 # MacOS
 .DS_Store
+
+# Local training artifacts
+metrics.txt
+models/
+src/models/
+src/ai/models/

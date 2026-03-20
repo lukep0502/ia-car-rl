@@ -1,132 +1,100 @@
-# IA-CAR Roadmap 🚗🤖
+# IA-CAR Roadmap
 
-This roadmap describes the development stages of the IA-CAR project,
-from a simple 2D simulator to an AI capable of optimizing lap times
-for a future 3D Roblox racing environment.
+This roadmap tracks the simulator from playable prototype to a robust RL driving platform.
 
----
+## Phase 1 - Playable Prototype
 
-# Phase 1 — Playable Prototype ✅
+Status: complete
 
-Goal: Build a basic playable racing simulator.
+Delivered:
 
-Features implemented:
+- Top-down car movement
+- Basic lap flow
+- Timer system
+- Manual restart loop
+
+## Phase 2 - Track Architecture
+
+Status: complete
+
+Delivered:
+
+- Image-based track support
+- Mask-based collision checks
+- Start line and checkpoint logic
+- Base track abstraction
+
+## Phase 3 - Sensor System
+
+Status: complete
+
+Delivered:
+
+- Raycast-based distance sensing
+- Multi-angle perception
+- Sensor visualization in debug mode
+- Headless-compatible sensor updates
+
+## Phase 4 - Reinforcement Learning Environment
+
+Status: complete
+
+Delivered:
+
+- Resettable training environment
+- Track-independent progress/alignment features
+- Normalized state representation
+- Reward shaping around progress, alignment, speed, and danger
+- Episode termination for collision, timeout, and stuck behavior
+
+## Phase 5 - Q-Learning Training Stack
+
+Status: in progress
+
+Delivered:
+
+- Q-table agent
+- Experience replay
+- n-step updates
+- TD-error-based replay prioritization
+- Weighted exploration actions
+- Headless training flow
+- Diagnostic dashboard
+- Saved-model metrics snapshots
+
+Current bottleneck:
+
+- The agent advances consistently on `Track1` but still struggles to convert early progress into full lap completion.
+
+## Phase 6 - Multi-Track Generalization
+
+Status: partially implemented
+
+Delivered:
 
 - Circular track
-- Basic car physics
-- Lap counting
-- Timer system
-- Direction enforcement
-- Restart system
+- Oval track
+- Complex procedural track
+- Unified track progress interface
 
-This phase validated the core gameplay loop.
+Next work:
 
----
+- Stronger evaluation protocol across tracks
+- Better generalization benchmarks
+- Cleaner model selection between `Track1` and procedural pools
 
-# Phase 2 — Track System Architecture ✅
+## Phase 7 - Policy Quality Upgrades
 
-Goal: Create a scalable and modular track system.
+Status: future
 
-Features:
+Possible directions:
 
-- Image-based tracks
-- Mask-based collision detection
-- Finish line detection
-- Checkpoint validation
-- Track boundaries
-- Custom track support
-- New imported track
-- Major project structure reorganization
+- Better action-space design
+- More robust lap completion rewards
+- Improved steering stability
+- Transition from Q-table to function approximation if state complexity grows further
 
-This phase transformed the project into a **flexible racing simulation engine**.
+## Long-Term Goal
 
----
-
-# Phase 3 — Sensor System
-
-Goal: Provide perception data for the AI agent.
-
-Planned features:
-
-- Raycasting sensors
-- Distance to track edges
-- Multi-angle detection
-- Collision awareness
-- Sensor visualization tools
-
-These sensors will form the **observation space for the AI**.
-
----
-
-# Phase 4 — AI Environment
-
-Goal: Transform the simulator into a Reinforcement Learning environment.
-
-Planned features:
-
-- Observation space definition
-- Action space (steering / throttle / brake)
-- Reward function
-- Episode management
-- Reset logic
-- Performance metrics
-
-Possible integration with:
-
-- Gymnasium
-- Stable-Baselines3
-
----
-
-# Phase 5 — Reinforcement Learning Training
-
-Goal: Train agents capable of completing laps efficiently.
-
-Planned algorithms:
-
-- PPO
-- DQN
-- SAC (possible future)
-
-Training objectives:
-
-- Complete laps consistently
-- Minimize lap time
-- Learn optimal racing lines
-
-Evaluation metrics:
-
-- Average lap time
-- Stability
-- Track completion rate
-
----
-
-# Phase 6 — Advanced Simulation
-
-Goal: Improve realism and training quality.
-
-Possible features:
-
-- Multiple track layouts
-- Randomized spawn positions
-- Dynamic track variations
-- Performance telemetry
-- Ghost car comparison
-
----
-
-# Phase 7 — Roblox AI Adaptation (Long-Term Goal)
-
-Goal: Apply learned strategies to a **3D Roblox racing game**.
-
-Possible approaches:
-
-- Recreate sensors in Roblox
-- Transfer driving logic
-- Record and replay optimal paths
-- Train models externally and deploy behavior logic
-
-Final objective:
-
-An AI capable of **finding and executing the fastest lap possible in a Roblox racing environment**.
+Transfer the useful driving behavior, trajectory logic, and racing-line optimization concepts
+from the 2D simulator into a future 3D Roblox racing system.
