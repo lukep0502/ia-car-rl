@@ -6,13 +6,9 @@ except ImportError:
         return iterable
 
 import os
-import random
 from collections import deque
 from core.environment import Environment
-from tracks.circular_track import CircularTrack
-from tracks.oval_track import OvalTrack
-from tracks.complex_track import ComplexTrack
-from tracks.track1 import Track1
+
 
 class Trainer:
 
@@ -22,31 +18,35 @@ class Trainer:
         self.agent = agent
         self.width = env.track.width
         self.height = env.track.height
-        if env.track.type == "image-based":
-            self.track_factories = [Track1]
-        else:
-            self.track_factories = [
-                CircularTrack,
-                OvalTrack,
-                ComplexTrack,
-            ]
+        self.track_factory = env.track.__class__
 
         # Global training stats
         self.best_reward_ever = float('-inf')
         self.best_lap_time_ever = None
         self.longest_distance = 0
         self.total_laps_completed = 0
-        self.max_progress_ever = 0
+        self.max_progress_ratio_ever = 0.0
+        self.track_best_progress_ratio = {}
+        self.track_plateau_counts = {}
+        self.current_track_name = self.track_factory.__name__
         self.track_length = getattr(self.env.track, "progress_target", 360)
+        self.track_best_progress_ratio[self.current_track_name] = 0.0
+        self.track_plateau_counts[self.current_track_name] = 0
 
         # Adaptive exploration
         self.episodes_since_best_reward = 0
-        self.epsilon_min = 0.10
+        self.epsilon_min = 0.03
         self.epsilon_max = 1.0
-        self.epsilon_decay = 0.99955
-        self.epsilon_boost = 0.04
-        self.epsilon_boost_threshold = 900
-        self.epsilon_boost_cap = 0.22
+        self.epsilon_decay = 0.99935
+        self.epsilon_boost = 0.03
+        self.epsilon_boost_threshold = 650
+        self.progress_boost_threshold = 180
+        self.epsilon_boost_cap = 0.18
+        self.base_replay_passes = 6
+        self.collision_replay_bonus = 4
+        self.stuck_replay_bonus = 2
+        self.breakthrough_replay_bonus = 3
+        self.lap_replay_bonus = 6
 
         # Wall proximity threshold (pixels) used for metrics and penalties
         self.wall_proximity_threshold = 50
@@ -63,9 +63,6 @@ class Trainer:
         # Benchmark history (periodic snapshots)
         self.benchmark_history = []
         self.recent_rewards = deque(maxlen=200)
-        self.easy_track = CircularTrack
-        self.medium_tracks = [CircularTrack, OvalTrack]
-        self.all_tracks = [CircularTrack, OvalTrack, ComplexTrack]
 
         # Expose some stats to the environment for optional overlays
         self.agent.epsilon = self.epsilon_max
@@ -76,21 +73,41 @@ class Trainer:
         self.env.best_lap_time_ever = self.best_lap_time_ever
         self.env.longest_distance = self.longest_distance
         self.env.benchmark_history = self.benchmark_history
+        self.env.current_track_name = self.current_track_name
+
+    def _get_progress_ratio(self, progress_value, track_length):
+        if not track_length:
+            return 0.0
+        return max(0.0, min(1.0, progress_value / track_length))
+
+    def _get_completion_metric(self):
+        if not self.track_best_progress_ratio:
+            return 0.0
+        return sum(self.track_best_progress_ratio.values()) / len(self.track_best_progress_ratio)
+
+    def _record_track_progress(self, track_name, progress_ratio):
+        best_ratio = self.track_best_progress_ratio.get(track_name, 0.0)
+        if progress_ratio > best_ratio + 0.002:
+            self.track_best_progress_ratio[track_name] = progress_ratio
+            self.track_plateau_counts[track_name] = 0
+        else:
+            self.track_best_progress_ratio.setdefault(track_name, best_ratio)
+            self.track_plateau_counts[track_name] = self.track_plateau_counts.get(track_name, 0) + 1
+
+        self.max_progress_ratio_ever = max(
+            self.max_progress_ratio_ever,
+            self.track_best_progress_ratio.get(track_name, progress_ratio)
+        )
 
     def reset_env(self, episode):
-        if self.track_factories == [Track1]:
-            track_cls = Track1
-        elif episode < 5000:
-            track_cls = self.easy_track
-        elif episode < 15000:
-            track_cls = random.choice(self.medium_tracks)
-        else:
-            track_cls = random.choice(self.all_tracks)
-
-        track = track_cls(self.width, self.height)
+        track = self.track_factory(self.width, self.height)
         self.env = Environment(self.width, self.height, track)
         self.env.reset()
+
+        self.current_track_name = self.track_factory.__name__
         self.track_length = getattr(track, "progress_target", 360)
+        self.track_best_progress_ratio.setdefault(self.current_track_name, 0.0)
+        self.track_plateau_counts.setdefault(self.current_track_name, 0)
         self._sync_env_stats()
 
     def export_stats(self):
@@ -103,7 +120,7 @@ class Trainer:
             "wall_proximity_rate": self.running_wall_steps / self.running_steps if self.running_steps else 0.0,
             "exploration_diversity": (self.running_unique_actions / self.running_episodes / 9) if self.running_episodes else 0.0,
             "stuck_rate": self.running_stuck / self.running_episodes if self.running_episodes else 0.0,
-            "track_completion_progress": self.max_progress_ever / self.track_length if self.track_length else 0.0,
+            "track_completion_progress": self._get_completion_metric(),
             "episode_survival_time": self.running_steps / self.running_episodes if self.running_episodes else 0.0,
             "progress_efficiency": self.running_progress_delta / self.running_steps if self.running_steps else 0.0,
         }
@@ -176,19 +193,23 @@ class Trainer:
                 episode_steps += 1
                 if progress_delta > 0:
                     episode_forward_steps += 1
-                if self.env.sensor_values and min(self.env.sensor_values) < self.wall_proximity_threshold:  # Close to wall threshold
+                if self.env.sensor_values and min(self.env.sensor_values) < self.wall_proximity_threshold:
                     episode_wall_steps += 1
                 episode_actions.add(action_index)
                 episode_progress_delta += progress_delta
 
+            episode_max_progress = self.env.progress_state.get(
+                "max_progress",
+                self.env.progress_state.get("total_progress", 0)
+            )
+            episode_progress_ratio = self._get_progress_ratio(
+                episode_max_progress,
+                self.track_length
+            )
+
             # Collect stats
             rewards_window.append(total_reward)
-            distances_window.append(
-                self.env.progress_state.get(
-                    "max_progress",
-                    self.env.progress_state.get("total_progress", 0)
-                )
-            )
+            distances_window.append(episode_progress_ratio * 100.0)
             steps_window.append(steps)
             collisions_window.append(1 if self.env.collision else 0)
 
@@ -201,8 +222,8 @@ class Trainer:
 
             # Update global stats
             self.total_laps_completed += self.env.laps
-            self.longest_distance = max(self.longest_distance, self.env.progress_state.get("total_progress", 0))
-            self.max_progress_ever = max(self.max_progress_ever, self.env.progress_state.get("max_progress", self.env.progress_state.get("total_progress", 0)))
+            self.longest_distance = max(self.longest_distance, episode_progress_ratio * 100.0)
+            self._record_track_progress(self.current_track_name, episode_progress_ratio)
 
             if total_reward > self.best_reward_ever:
                 self.best_reward_ever = total_reward
@@ -213,6 +234,12 @@ class Trainer:
             if self.env.best_lap_time is not None:
                 if self.best_lap_time_ever is None or self.env.best_lap_time < self.best_lap_time_ever:
                     self.best_lap_time_ever = self.env.best_lap_time
+
+            if self.env.laps > 0:
+                self.agent.epsilon = max(
+                    self.epsilon_min,
+                    self.agent.epsilon * 0.985
+                )
 
             # Append to new metrics windows
             forward_progress_steps_window.append(episode_forward_steps)
@@ -234,9 +261,9 @@ class Trainer:
             # Compute and set on env for overlay
             self.env.forward_progress_rate = self.running_forward_steps / self.running_steps if self.running_steps else 0
             self.env.wall_proximity_rate = self.running_wall_steps / self.running_steps if self.running_steps else 0
-            self.env.exploration_diversity = (self.running_unique_actions / self.running_episodes / 9) if self.running_episodes else 0  # normalized 0-1 for 9 actions
+            self.env.exploration_diversity = (self.running_unique_actions / self.running_episodes / 9) if self.running_episodes else 0
             self.env.stuck_rate = self.running_stuck / self.running_episodes if self.running_episodes else 0
-            self.env.track_completion_progress = self.max_progress_ever / self.track_length
+            self.env.track_completion_progress = self._get_completion_metric()
             self.env.episode_survival_time = self.running_steps / self.running_episodes if self.running_episodes else 0
             self.env.progress_efficiency = self.running_progress_delta / self.running_steps if self.running_steps else 0
 
@@ -250,6 +277,7 @@ class Trainer:
                     "R": f"{total_reward:.1f}",
                     "L": self.env.laps,
                     "BL": best_lap_str,
+                    "T": self.current_track_name,
                     "E": f"{self.agent.epsilon:.4f}"
                 })
 
@@ -263,12 +291,12 @@ class Trainer:
                 avg_laps = sum(laps_window) / len(laps_window) if laps_window else 0
 
                 # New diagnostic metrics
-                total_steps_sum = sum(total_steps_window) if total_steps_window else 1  # avoid div0
+                total_steps_sum = sum(total_steps_window) if total_steps_window else 1
                 forward_progress_rate = sum(forward_progress_steps_window) / total_steps_sum
                 wall_proximity_rate = sum(wall_proximity_steps_window) / total_steps_sum
-                exploration_diversity = (sum(unique_actions_window) / len(unique_actions_window) / 9) if unique_actions_window else 0  # normalized 0-1
+                exploration_diversity = (sum(unique_actions_window) / len(unique_actions_window) / 9) if unique_actions_window else 0
                 stuck_rate = sum(stuck_events_window) / len(stuck_events_window) if stuck_events_window else 0
-                track_completion_progress = self.max_progress_ever / self.track_length
+                track_completion_progress = self._get_completion_metric()
                 episode_survival_time = sum(total_steps_window) / len(total_steps_window) if total_steps_window else 0
                 progress_efficiency = sum(progress_delta_window) / total_steps_sum
 
@@ -278,20 +306,25 @@ class Trainer:
                     "best_reward": self.best_reward_ever,
                     "best_lap_time": self.best_lap_time_ever,
                     "total_laps": self.total_laps_completed,
+                    "avg_progress": avg_distance,
                     "avg_distance": avg_distance,
                     "avg_lap_time": avg_lap_time,
                     "avg_laps": avg_laps,
+                    "current_track": self.current_track_name,
+                    "track_completion_progress": track_completion_progress,
                 })
 
                 # Clear screen and print dashboard
                 os.system('cls' if os.name == 'nt' else 'clear')
                 print("================================")
                 print(f"Episode: {episode + 1}")
+                print(f"Current Track: {self.current_track_name}")
                 print(f"Epsilon: {self.agent.epsilon:.3f}")
                 print(f"Avg Reward (5000): {avg_reward:.1f}")
                 print(f"Best Reward: {best_reward:.1f}")
                 print(f"Best Lap Time (ever): {self.best_lap_time_ever if self.best_lap_time_ever is not None else 'N/A'}")
-                print(f"Avg Distance: {avg_distance:.1f}")
+                print(f"Avg Track Progress: {avg_distance:.1f}%")
+                print(f"Avg Steps: {avg_steps:.1f}")
                 print(f"Avg Lap Time: {avg_lap_time:.3f}s" if avg_lap_time != float('inf') else "Avg Lap Time: N/A")
                 print(f"Avg Laps: {avg_laps:.1f}")
                 print(f"Collision Rate: {collision_rate:.2f}")
@@ -318,19 +351,33 @@ class Trainer:
                 stuck_events_window = []
                 progress_delta_window = []
                 total_steps_window = []
-            replay_times = 4 + (4 if self.env.collision else 0) + (2 if self.env.stuck else 0)
+
+            current_track_best = self.track_best_progress_ratio.get(self.current_track_name, 0.0)
+            near_best_run = episode_progress_ratio >= max(0.45, current_track_best - 0.015)
+
+            replay_times = self.base_replay_passes
+            replay_times += self.collision_replay_bonus if self.env.collision else 0
+            replay_times += self.stuck_replay_bonus if self.env.stuck else 0
+            replay_times += self.breakthrough_replay_bonus if near_best_run else 0
+            replay_times += self.lap_replay_bonus if self.env.laps > 0 else 0
             for _ in range(replay_times):
                 self.agent.replay(64)
 
+            current_track_plateau = self.track_plateau_counts.get(self.current_track_name, 0)
             if (
                 episode > 1200
-                and self.env.stuck
-                and self.episodes_since_best_reward >= self.epsilon_boost_threshold
+                and current_track_best < 0.985
+                and current_track_plateau >= self.progress_boost_threshold
             ):
+                boost = self.epsilon_boost
+                if self.episodes_since_best_reward >= self.epsilon_boost_threshold:
+                    boost += 0.02
+                    self.episodes_since_best_reward = 0
+
                 self.agent.epsilon = min(
                     self.epsilon_boost_cap,
-                    self.agent.epsilon + self.epsilon_boost
+                    self.agent.epsilon + boost
                 )
-                self.episodes_since_best_reward = 0
+                self.track_plateau_counts[self.current_track_name] = 0
 
             self.recent_rewards.append(total_reward)

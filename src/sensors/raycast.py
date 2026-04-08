@@ -11,7 +11,7 @@ class RaySensor:
 
         x, y = car_pos
 
-        # converter graus -> radianos
+        # Convert degrees to radians
         angle = math.radians(car_angle) + self.angle_offset
 
         for i in range(1, self.max_distance):
@@ -20,13 +20,13 @@ class RaySensor:
             # Pygame uses inverted Y axis. Keep ray direction consistent with car kinematics.
             test_y = int(y - math.sin(angle) * i)
 
-            # pista procedural
+            # Procedural track
             if track.type == "procedural":
 
                 if not track.is_on_track(test_x, test_y):
                     return i, (test_x, test_y)
 
-            # pista com máscara
+            # Mask-based track
             else:
 
                 if test_x < 0 or test_y < 0:

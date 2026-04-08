@@ -1,72 +1,99 @@
-# IA-CAR
+# AI Car RL
 
 Top-down racing simulator built with Pygame for reinforcement learning experiments.
 
-The current project focus is a **Q-learning driving agent** that learns on a 2D track using
-raycast sensors, checkpoint-based progress, lap timing, and diagnostic telemetry. The long-term
-goal remains transfer of the driving logic and racing-line concepts into a future 3D Roblox game.
+This project started as a simple AI car prototype and evolved into a multi-track reinforcement learning sandbox with saved models, training diagnostics, debug overlays, and a startup flow for selecting tracks and model behavior. The current repository represents the final Q-table-based version of the project.
 
-## Current Status
+## Project Overview
 
-The simulator is no longer just a playable prototype. It now includes:
+The goal of the project is to train a car to drive around 2D racing tracks using reinforcement learning concepts such as:
 
-- Manual driving mode
-- AI mode with headless training
-- Sensor-based state representation
-- Unified cross-track progress/alignment features
-- Q-learning with n-step updates and prioritized replay
-- Track diagnostics and debug overlays
-- Model persistence with training metrics snapshots
+- sensor-based perception
+- checkpoint and lap progression
+- reward shaping
+- iterative training with saved models
 
-## Main Features
+What began as a single-track experiment now supports multiple tracks, multiple saved models, and a more organized structure for training and evaluation.
 
-### Simulation Core
+## Current State
 
-- Top-down car physics with throttle, brake, and steering
-- Lap timing and multi-lap race flow
-- Collision detection against image masks and procedural geometry
-- Episode reset logic for training and gameplay
+The repository currently includes:
 
-### Track System
+- manual driving mode
+- AI mode with training and evaluation flow
+- image-based and procedural tracks
+- circular, oval, and `Track1` support
+- best trained models for each main track
+- debug overlays and terminal training metrics
+- English-standardized code, comments, prompts, and documentation
 
-- Image-based track support (`Track1`)
-- Procedural track support
-- Circular, oval, and complex procedural layouts
-- Unified progress interface across track types
-- Checkpoint and finish-line validation
+## New Implementations
 
-### AI Training Stack
+### Best Trained Models
 
-- Raycast sensor system
-- Normalized state representation
-- Reward system aligned with forward progress and safe speed
-- Experience replay buffer
-- n-step Q-learning updates
-- Weighted exploration for more useful action sampling
-- Diagnostic metrics for forward progress, wall proximity, exploration diversity, stuck rate, track progress, survival time, and progress efficiency
+The project now ships with best trained models for the three main tracks:
 
-### Tooling and Debug
+| Track | Model File | Main Path |
+| --- | --- | --- |
+| Circular Track | `ia_car_vBestVersionCircular.pkl` | `src/models/best-models/q table/circular-track/` |
+| Oval Track | `ia_car_vBestVersionOval.pkl` | `src/models/best-models/q table/oval-track/` |
+| Track1 | `ia_car_vBestVersionTrack1.pkl` | `src/models/best-models/q table/track1/` |
 
-- Headless training path for better performance
-- In-game debug mode (`Q`) with runtime and saved-training metrics
-- Saved models now include a metrics snapshot for later inspection
-- Neutral HUD styling for readability on both dark and light tracks
+The same best-model files are also available in `src/models/` for direct loading from the application.
 
-## Project Structure
+### Startup Menu and Selection Flow
 
-```text
-src/
-  ai/          agent, reward, normalization, trainer
-  core/        car and environment
-  rendering/   game renderer and overlays
-  sensors/     raycasting and sensor orchestration
-  tracks/      image-based and procedural tracks
-docs/
-  roadmap.md
-  training-metrics.md
-```
+A simple startup selection flow was added to make testing and evaluation easier.
 
-## Running
+It now allows you to:
+
+- choose the track at startup
+- choose whether to run in AI mode
+- choose whether to use the best trained model for the selected track
+- choose whether to load another saved model
+- train from scratch if no model is selected
+
+This makes the project much easier to explore than the earlier single-track training flow.
+
+## Q-Table Deprecation
+
+> This is the final version of the project that uses a Q-table approach.
+
+The Q-table approach has now been discontinued as the long-term direction for the project.
+
+Why:
+
+- it is too limited for scaling across multiple tracks and richer state spaces
+- it works better in simpler or more isolated environments
+- it becomes harder to maintain and generalize as the project grows
+
+The Q-table implementation remains in this repository as an important learning milestone and as the final reference version of this phase of the project.
+
+## Why This Repository Matters
+
+Even as a final Q-table version, the project already includes several meaningful improvements over the earlier prototype:
+
+- unified track progress features
+- saved model statistics
+- stronger reward shaping
+- weighted exploration and replay improvements
+- multiple track support
+- curated best-model checkpoints
+- better startup UX through the menu and model-selection flow
+
+## Language Standardization
+
+The project has been standardized to English.
+
+This includes:
+
+- source code prompts and printed output
+- code comments
+- README and project documentation
+
+The goal was to make the repository more accessible, easier to share, and easier to maintain.
+
+## Installation
 
 ### Requirements
 
@@ -77,45 +104,93 @@ docs/
 Install dependencies:
 
 ```bash
-pip install pygame tqdm
+pip install -r requirements.txt
 ```
 
-Start the application:
+## Usage
+
+Run the project with:
 
 ```bash
 python src/main.py
 ```
 
-## Modes
+### Startup Flow
 
-### Manual Mode
+When the application starts, the current flow is:
 
-- Drive with `W`, `A`, `S`, `D`
-- Restart with `R`
-- Exit with `ESC`
+1. Choose a track.
+2. Choose whether to use AI mode.
+3. If AI mode is enabled, choose whether to use the best trained model for that track.
+4. Optionally load another saved model or train from scratch.
 
-### AI Mode
+### Manual Controls
 
-- Train from scratch or load a saved model
-- Headless training is used before opening the visual result
-- Toggle debug overlay with `Q`
-- Saved models restore both Q-table parameters and training metrics
+- `W`: accelerate
+- `S`: brake
+- `A`: steer left
+- `D`: steer right
+- `R`: restart
+- `ESC`: quit
 
-## Notes About Training
+### AI Debug Controls
 
-- Current training entry point uses `Track1` by default in `src/main.py`
-- Procedural multi-track support exists in the trainer and track system
-- Diagnostic metrics are visible in terminal during training and in-game through debug mode
-- Old saved models created before metrics persistence will load without historical stats
+- `Q`: toggle debug information during AI runs
+
+## Project Structure
+
+```text
+src/
+  ai/          agent, reward system, normalization, trainer
+  core/        car and environment logic
+  menu/        startup track-selection menu
+  models/      saved checkpoints and best trained models
+  rendering/   game renderer and overlays
+  sensors/     raycasting and sensor orchestration
+  tracks/      image-based and procedural tracks
+docs/
+  roadmap.md
+  training-metrics.md
+```
 
 ## Documentation
+
+Additional documentation is available in:
 
 - [Roadmap](docs/roadmap.md)
 - [Training Metrics](docs/training-metrics.md)
 
-## Near-Term Priorities
+## Notes About the Current Version
 
-- Improve lap completion consistency on `Track1`
-- Reduce collisions after the first quarter of the track
-- Expand evaluation across procedural tracks
-- Keep the debug and model-inspection workflow practical for iteration
+- the repository includes best trained models for `oval-track`, `circular-track`, and `track1`
+- the current codebase is the final Q-table branch of the project
+- future improvements will likely come from new learning approaches rather than extending the Q-table further
+
+## Project Reflection
+
+This was my first AI project, and it represents a lot of learning, experimentation, and persistence.
+
+Reaching this stage brings a real sense of accomplishment. It was a fun project to build, and it taught me a lot about reinforcement learning, debugging, iteration, and how quickly simple ideas become more complex in practice.
+
+Even though the Q-table approach has reached its limit here, the project was absolutely worth it, and it opened the door for future versions built on stronger learning methods.
+
+## Future Direction
+
+Possible future improvements include:
+
+- replacing the Q-table with a more scalable learning approach
+- improving generalization across tracks
+- expanding evaluation and benchmarking
+- transferring useful driving concepts into future game projects
+
+## Acknowledgements
+
+Special thanks to:
+
+- ChatGPT, especially Codex, for development help, iteration support, and documentation assistance
+- GitHub Copilot for coding support during implementation
+- general research, tutorials, documentation, and online learning resources that helped shape the project
+
+## License
+
+No license file is currently included in the repository.

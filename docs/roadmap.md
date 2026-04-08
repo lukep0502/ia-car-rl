@@ -1,6 +1,6 @@
-# IA-CAR Roadmap
+# AI Car RL Roadmap
 
-This roadmap tracks the simulator from playable prototype to a robust RL driving platform.
+This roadmap tracks the simulator from playable prototype to a more structured RL driving platform.
 
 ## Phase 1 - Playable Prototype
 
@@ -49,7 +49,7 @@ Delivered:
 
 ## Phase 5 - Q-Learning Training Stack
 
-Status: in progress
+Status: complete as the final Q-table version
 
 Delivered:
 
@@ -62,13 +62,15 @@ Delivered:
 - Diagnostic dashboard
 - Saved-model metrics snapshots
 
-Current bottleneck:
+Conclusion:
 
-- The agent advances consistently on `Track1` but still struggles to convert early progress into full lap completion.
+- The Q-table stack was valuable for learning and experimentation.
+- It is no longer the preferred direction for future scaling.
+- This repository now serves as the final Q-table baseline.
 
-## Phase 6 - Multi-Track Generalization
+## Phase 6 - Multi-Track Expansion
 
-Status: partially implemented
+Status: implemented for the current repository scope
 
 Delivered:
 
@@ -76,23 +78,33 @@ Delivered:
 - Oval track
 - Complex procedural track
 - Unified track progress interface
+- Startup track-selection flow
+- Best trained models for `circular-track`, `oval-track`, and `track1`
 
-Next work:
+Current note:
 
-- Stronger evaluation protocol across tracks
-- Better generalization benchmarks
-- Cleaner model selection between `Track1` and procedural pools
+- Multi-track support now exists, but the Q-table approach does not scale well enough to remain the long-term solution.
 
-## Phase 7 - Policy Quality Upgrades
+## Phase 7 - Post Q-Table Future
 
 Status: future
 
 Possible directions:
 
-- Better action-space design
-- More robust lap completion rewards
-- Improved steering stability
-- Transition from Q-table to function approximation if state complexity grows further
+- More scalable learning approaches
+- Better generalization benchmarks
+- Improved evaluation workflows
+- Stronger policy learning beyond Q-table methods
+
+## Project Standardization
+
+Status: complete
+
+Delivered:
+
+- English-standardized code comments
+- English prompts and runtime output
+- English project documentation
 
 ## Long-Term Goal
 

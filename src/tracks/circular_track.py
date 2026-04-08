@@ -1,18 +1,19 @@
 import math
 import random
+
 import pygame
-from tracks.track import Track
+
 from core.car import Car
+from tracks.track import Track
+
 
 class CircularTrack(Track):
     def __init__(self, width, height):
-
         self.width = width
         self.height = height
 
         self.type = "procedural"
 
-        
         # Circle properties
         self.center = (width // 2, height // 2)  # Center of the screen
         self.radius = random.randint(150, 300)
@@ -24,14 +25,12 @@ class CircularTrack(Track):
         self.spawn_angle = 0
         self.car = Car(self.spawn_position[0], self.spawn_position[1])
 
-        #checkpoints
-
+        # Checkpoints
         self.num_checkpoints = 4
         self.checkpoints = []
         self.checkpoint_angles = []
 
         for i in range(self.num_checkpoints):
-
             angle = math.radians(i * (360 / self.num_checkpoints))
 
             x1 = self.center[0] + math.cos(angle) * self.radius
@@ -40,7 +39,7 @@ class CircularTrack(Track):
             x2 = self.center[0] + math.cos(angle) * (self.radius - self.thickness)
             y2 = self.center[1] - math.sin(angle) * (self.radius - self.thickness)
 
-            self.checkpoints.append(((x1,y1),(x2,y2)))
+            self.checkpoints.append(((x1, y1), (x2, y2)))
 
             # Precompute the angle of this checkpoint segment (midpoint angle)
             mx = (x1 + x2) / 2
@@ -53,7 +52,7 @@ class CircularTrack(Track):
         self.finish_line_x = self.center[0]
 
         self.finish_line_y1 = self.center[1] - self.radius
-        self.finish_line_y2 = self.center[1] - inner_radius 
+        self.finish_line_y2 = self.center[1] - inner_radius
 
         # Rotate checkpoint ordering so checkpoint 0 matches spawn position.
         self.spawn_track_angle = self.get_angle(*self.spawn_position)
@@ -71,10 +70,8 @@ class CircularTrack(Track):
             "total_progress": 0,
             "max_progress": 0,
             "last_angle": None,
-            "next_checkpoint": 0
+            "next_checkpoint": 0,
         }
-        
-                 
 
     def draw_track(self, surface):
         # Draw the circular track
@@ -82,12 +79,12 @@ class CircularTrack(Track):
 
         # Draw finish line
         pygame.draw.line(
-                surface,
-                "red",
-                (self.finish_line_x, self.finish_line_y1),
-                (self.finish_line_x, self.finish_line_y2),
-                3
-            )
+            surface,
+            "red",
+            (self.finish_line_x, self.finish_line_y1),
+            (self.finish_line_x, self.finish_line_y2),
+            3,
+        )
 
     def is_on_track(self, x, y):
         dx = x - self.center[0]
@@ -98,28 +95,28 @@ class CircularTrack(Track):
         inner_limit = self.radius - self.thickness
 
         return inner_limit < distance < outer_limit
-    
+
     # Get the angle from the center of the track to a given point (x, y)
     def get_angle(self, x, y):
         dx = x - self.center[0]
-        dy = self.center[1] - y  # invertido por causa do eixo do pygame
+        dy = self.center[1] - y  # Inverted because of the pygame axis
         angle = math.degrees(math.atan2(dy, dx))
         return angle % 360
 
     def crossed_finish_line(self, last_pos, current_pos):
-            lx, ly = last_pos
-            cx, cy = current_pos
+        lx, ly = last_pos
+        cx, cy = current_pos
 
-            # Verifica se cruzou eixo X da linha da esquerda para a direita (sentido horário)
-            crossed = (lx < self.finish_line_x and cx >= self.finish_line_x and cx > lx)
+        # Check whether it crossed the line X axis from left to right (clockwise direction)
+        crossed = (lx < self.finish_line_x and cx >= self.finish_line_x and cx > lx)
 
-            # E está dentro da altura da linha
-            inside_height = (
-                self.finish_line_y1 <= cy <= self.finish_line_y2
-            )
+        # And it is within the line height
+        inside_height = (
+            self.finish_line_y1 <= cy <= self.finish_line_y2
+        )
 
-            return crossed and inside_height
-    
+        return crossed and inside_height
+
     def reset_car(self, car):
         self.car = car
         self.car.x = self.spawn_position[0]
@@ -132,9 +129,9 @@ class CircularTrack(Track):
     def line_intersection(self, a1, a2, b1, b2):
 
         def ccw(A, B, C):
-            return (C[1]-A[1])*(B[0]-A[0]) > (B[1]-A[1])*(C[0]-A[0])
+            return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
 
-        return ccw(a1,b1,b2) != ccw(a2,b1,b2) and ccw(a1,a2,b1) != ccw(a1,a2,b2)
+        return ccw(a1, b1, b2) != ccw(a2, b1, b2) and ccw(a1, a2, b1) != ccw(a1, a2, b2)
 
     def _angle_passed(self, start, end, target, clockwise: bool):
         """Returns True if moving from start->end passes the target angle."""
@@ -146,17 +143,16 @@ class CircularTrack(Track):
             if start >= end:
                 return end < target <= start
             return target > end or target <= start
-        else:
-            if end >= start:
-                return start < target <= end
-            return target > start or target <= end
+        if end >= start:
+            return start < target <= end
+        return target > start or target <= end
 
     def _find_closest_checkpoint_index(self, angle):
         """Return the checkpoint index whose angle is closest to the given angle."""
         best_idx = 0
         best_diff = 360
         for i, cp_angle in enumerate(self.checkpoint_angles):
-            # circular angular difference
+            # Circular angular difference
             diff = abs((angle - cp_angle + 180) % 360 - 180)
             if diff < best_diff:
                 best_diff = diff
@@ -186,7 +182,7 @@ class CircularTrack(Track):
             state["next_checkpoint"] = cp_index
             state["checkpoints_passed"] = min(
                 self.num_checkpoints,
-                state.get("checkpoints_passed", 0) + hit_count
+                state.get("checkpoints_passed", 0) + hit_count,
             )
             return state, True
 
@@ -216,19 +212,18 @@ class CircularTrack(Track):
         )
 
     def progress_logic(self, state, last_pos, current_pos):
-
         total_progress = state["total_progress"]
         last_angle = state["last_angle"]
         max_progress = state.get("max_progress", 0)
 
         current_angle = self.get_angle(*current_pos)
-                
-        # PRIMEIRO inicializa last_angle
+
+        # First, initialize last_angle
         if last_angle is None:
             state["last_angle"] = current_angle
             return state, False, False
 
-        # Calcula variação angular no sentido correto (wrap 0-360)
+        # Calculate angular variation in the correct direction (wrap 0-360)
         delta = current_angle - last_angle
 
         if delta > 180:
@@ -244,15 +239,15 @@ class CircularTrack(Track):
         if moving_forward:
             state, checkpoint_hit = self.check_checkpoint(last_angle, current_angle, state)
 
-        # Ignore checkpoint hit immediately after a reset (so lap 2 doesn’t start with checkpoint 0 instantly)
+        # Ignore checkpoint hit immediately after a reset (so lap 2 doesn't start with checkpoint 0 instantly)
         if state.get("ignore_checkpoints"):
             checkpoint_hit = False
             state["ignore_checkpoints"] = False
 
-        # aplica delta direto
+        # Apply delta directly
         total_progress -= delta
 
-        # trava limites
+        # Clamp limits
         total_progress = max(0, min(total_progress, 360))
 
         crossed = self.crossed_finish_line(last_pos, current_pos)
@@ -262,7 +257,7 @@ class CircularTrack(Track):
             crossed = False
             state["ignore_finish_line"] = False
 
-        # Atualiza max_progress
+        # Update max_progress
         if total_progress > max_progress:
             max_progress = total_progress
 
@@ -285,24 +280,23 @@ class CircularTrack(Track):
         angle_to_target = self.normalize_angle_to_target(target_angle, car_angle)
 
         return progress, angle_to_target
-    
-    def _draw_progress(self, screen, env):
 
+    def _draw_progress(self, screen, env):
         bar_width = 200
         bar_height = 20
 
         bar_x = screen.get_width() - bar_width - 20
         bar_y = 20
 
-        # Moldura
+        # Border
         pygame.draw.rect(
             screen,
             "white",
             (bar_x, bar_y, bar_width, bar_height),
-            2
+            2,
         )
 
-        # progresso atual
+        # Current progress
         progress = env.progress_state["total_progress"]
 
         progress_ratio = progress / 360
@@ -311,15 +305,13 @@ class CircularTrack(Track):
         pygame.draw.rect(
             screen,
             "green",
-            (bar_x, bar_y, fill_width, bar_height)
+            (bar_x, bar_y, fill_width, bar_height),
         )
 
     def draw_checkpoints(self, surface, state=None):
-
         line_width = 3
 
         for i, checkpoint in enumerate(self.checkpoints):
-
             (x1, y1), (x2, y2) = checkpoint
 
             color = "yellow"
@@ -332,5 +324,5 @@ class CircularTrack(Track):
                 color,
                 (x1, y1),
                 (x2, y2),
-                line_width
+                line_width,
             )

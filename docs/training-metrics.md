@@ -1,6 +1,8 @@
 # Training Metrics
 
-This document defines the diagnostic metrics used by the IA-CAR training loop and debug overlay.
+This document defines the diagnostic metrics used by the AI Car RL training loop and debug overlay.
+
+These metrics describe the current and final Q-table-based version of the project. They are still useful as evaluation references even if future versions move to a different learning approach.
 
 ## Forward Progress Rate
 
@@ -73,3 +75,4 @@ How much movement is converted into real track progress.
 - The in-game debug overlay shows current-run data and saved training snapshots.
 - Models saved before metrics persistence was added do not contain historical overlay stats.
 - The terminal dashboard remains the authoritative 5000-episode summary during headless training.
+- The metrics in this document reflect the current Q-table baseline and may be reused for future model comparisons.

@@ -1,58 +1,86 @@
 import os
+
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
+
 import pygame
+
+from ai.agent import Agent
 from ai.trainer import Trainer
 from core.environment import Environment
+from menu.menu import track_menu
 from rendering.game_renderer import GameRenderer
-from ai.agent import Agent
-from tracks.track1 import Track1
 from tracks.circular_track import CircularTrack
+from tracks.oval_track import OvalTrack
+from tracks.track1 import Track1
 
 WIDTH, HEIGHT = 800, 800
+TRAINING_TRACK = Track1
+
+
+def menu():
+    track = track_menu()
+    # Circular Track
+    if track == 1:
+        track = CircularTrack(WIDTH, HEIGHT)
+        best_model = "vBestVersionCircular"
+    # Oval Track
+    if track == 2:
+        track = OvalTrack(WIDTH, HEIGHT)
+        best_model = "vBestVersionOval"
+    # First Track
+    if track == 3:
+        track = Track1(WIDTH, HEIGHT)
+        best_model = "vBestVersionTrack1"
+
+    return track, best_model
 
 
 def main():
-
-    mode = input("Modo IA? (s/n): ").strip().lower()
-    ia = mode == "s"
+    track, best_model = menu()
+    mode = input("AI mode? (y/n): ").strip().lower()
+    ia = mode == "y"
+    use_model = "n"
     agent = None
     env = None
-    
-    if ia == True:
-        track = Track1(WIDTH, HEIGHT)
+
+    if ia is True:
         env = Environment(WIDTH, HEIGHT, track)
         env.reset()  # Initialize environment state
         agent = Agent()
 
-        use_model = input("Usar modelo salvo? (s/n): ").lower()
+        use_best_model = input("Do you want to use the best model? (y/n): ").lower()
 
-        if use_model == "s":
+        if use_best_model == "y":
+            agent.load(best_model)
+            env.reset()
+            agent.apply_model_stats(env)
+        else:
+            use_model = input("Use saved model? (y/n): ").lower()
 
-            version = input("Qual versão? (ex: v1): ")
+        if use_model == "y" and use_best_model != "y":
+            version = input("Which version? (e.g. v1): ")
 
             agent.load(version)
             env.reset()
             agent.apply_model_stats(env)
 
-        else:
-            print("Treinando do zero.")
+        if use_model == "n" and use_best_model != "y":
+            print("Training from scratch.")
 
             trainer = Trainer(env, agent)
-            trainer.train(10000)
+            trainer.train(15000)
             env = trainer.env
             env.reset()
             agent.set_model_stats(trainer.export_stats())
             agent.apply_model_stats(env)
-            save_model = input("Salvar modelo? (s/n): ").lower()
-            result = input("Ver resultado? (s/n): ").lower()
-            if save_model == "s":
-
-                version = input("Nome da versão (ex: v1, v2, teste1): ")
-
+            save_model = input("Save model? (y/n): ").lower()
+            result = input("See result? (y/n): ").lower()
+            if save_model == "y":
+                version = input("Version name (e.g. v1, v2, test1): ")
                 agent.save(version)
 
             # Headless training mode for performance.
-            if result != "s":
+            if result != "y":
                 return
 
     pygame.init()
@@ -63,15 +91,12 @@ def main():
         env = Environment(WIDTH, HEIGHT, track)
         env.reset()
 
-
     running = True
 
     renderer = GameRenderer(WIDTH, HEIGHT)
 
     while running:
-
         renderer.clock.tick(60)
-
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -99,7 +124,7 @@ def main():
                 "right": keys[pygame.K_d],
             }
 
-        if ia == True:
+        if ia is True:
             next_state, reward, done = env.step(action)
             agent.learn(state, action_index, reward, next_state, done)
             if done:

@@ -1,10 +1,10 @@
 import math
+
 import pygame
 
 
 class GameRenderer:
     def __init__(self, width, height):
-
         pygame.init()
         self.width = width
         self.height = height
@@ -22,7 +22,6 @@ class GameRenderer:
         self.highlight_color = (255, 220, 120)
 
     def render(self, env, ia, agent=None):
-
         self.screen.fill(self.neutral_bg)
 
         if env.track.type == "image-based":
@@ -68,20 +67,24 @@ class GameRenderer:
         self._draw_panel(12, 12, 250, 130 if env.best_lap_time else 100)
 
         lap_text = self.font_small.render(
-            f"Lap: {env.laps}/{env.max_laps}", True, self.text_color)
+            f"Lap: {env.laps}/{env.max_laps}", True, self.text_color
+        )
         self.screen.blit(lap_text, (20, 20))
 
         time_text = self.font_small.render(
-            f"Lap Time: {env.current_lap_time:.2f}s", True, self.muted_text)
+            f"Lap Time: {env.current_lap_time:.2f}s", True, self.muted_text
+        )
         self.screen.blit(time_text, (20, 50))
 
         total_text = self.font_small.render(
-            f"Total Time: {env.total_time:.2f}s", True, self.muted_text)
+            f"Total Time: {env.total_time:.2f}s", True, self.muted_text
+        )
         self.screen.blit(total_text, (20, 80))
 
         if env.best_lap_time:
             best_text = self.font_small.render(
-                f"Best: {env.best_lap_time:.2f}s", True, self.highlight_color)
+                f"Best: {env.best_lap_time:.2f}s", True, self.highlight_color
+            )
             self.screen.blit(best_text, (20, 110))
 
         if env.race_finished:
@@ -90,33 +93,30 @@ class GameRenderer:
             overlay.fill((0, 0, 0))
             self.screen.blit(overlay, (0, 0))
 
-            # Título principal
-            text1 = self.font_big.render("CORRIDA FINALIZADA", True, self.text_color)
+            # Main title
+            text1 = self.font_big.render("RACE FINISHED", True, self.text_color)
             self.screen.blit(
                 text1,
-                text1.get_rect(center=(self.width // 2,
-                                    self.height // 2 - 60))
+                text1.get_rect(center=(self.width // 2, self.height // 2 - 60)),
             )
 
-            # Instrução reiniciar
-            restart_msg = "Pressione R para reiniciar" if not ia else "IA: reinicio automatico"
+            # Restart instruction
+            restart_msg = "Press R to restart" if not ia else "AI: automatic restart"
             text2 = self.font_small.render(
                 restart_msg, True, self.highlight_color
             )
             self.screen.blit(
                 text2,
-                text2.get_rect(center=(self.width // 2,
-                                    self.height // 2))
+                text2.get_rect(center=(self.width // 2, self.height // 2)),
             )
 
-            # Instrução sair
+            # Exit instruction
             text3 = self.font_small.render(
-                "Pressione ESC para sair", True, self.muted_text
+                "Press ESC to exit", True, self.muted_text
             )
             self.screen.blit(
                 text3,
-                text3.get_rect(center=(self.width // 2,
-                                    self.height // 2 + 40))
+                text3.get_rect(center=(self.width // 2, self.height // 2 + 40)),
             )
 
     def _draw_debug_overlay(self, env, agent=None):
@@ -126,17 +126,23 @@ class GameRenderer:
         lines = []
         lines.append("--- CURRENT RUN ---")
         lines.append(f"Episode: {getattr(env, 'current_episode', 'N/A')}")
-        epsilon = getattr(agent, 'epsilon', None) if agent else None
-        lines.append(f"Epsilon: {epsilon:.3f}" if isinstance(epsilon, (int, float)) else "Epsilon: N/A")
+        epsilon = getattr(agent, "epsilon", None) if agent else None
+        lines.append(
+            f"Epsilon: {epsilon:.3f}" if isinstance(epsilon, (int, float)) else "Epsilon: N/A"
+        )
         lines.append(f"Episode Reward: {getattr(env, 'current_episode_reward', 0):.1f}")
         lines.append(f"Distance: {getattr(env, 'current_distance', 0):.1f}")
 
         lines.append("--- BEST RESULTS ---")
         lines.append(f"Best Reward: {self._format_value(getattr(env, 'best_reward_ever', None), 1)}")
-        lines.append(f"Best Lap Time: {self._format_value(getattr(env, 'best_lap_time_ever', None), 2, suffix='s')}")
-        lines.append(f"Longest Dist: {self._format_value(getattr(env, 'longest_distance', None), 1)}")
+        lines.append(
+            f"Best Lap Time: {self._format_value(getattr(env, 'best_lap_time_ever', None), 2, suffix='s')}"
+        )
+        lines.append(
+            f"Best Progress: {self._format_value(getattr(env, 'longest_distance', None), 1, suffix='%')}"
+        )
 
-        if getattr(env, 'benchmark_history', None):
+        if getattr(env, "benchmark_history", None):
             last = env.benchmark_history[-1]
             lines.append("--- LAST 5000 EPISODES ---")
             lines.append(f"Best R: {self._format_value(last.get('best_reward'), 1)}")
@@ -160,7 +166,7 @@ class GameRenderer:
             f"Stuck Rate: {getattr(env, 'stuck_rate', 0):.2f}",
             f"Track Progress: {getattr(env, 'track_completion_progress', 0):.2f}",
             f"Episode Survival: {getattr(env, 'episode_survival_time', 0):.1f}",
-            f"Progress Efficiency: {getattr(env, 'progress_efficiency', 0):.3f}"
+            f"Progress Efficiency: {getattr(env, 'progress_efficiency', 0):.3f}",
         ]
 
         y = self.height - 20 - len(lines) * 20  # Start from bottom, 20px per line
@@ -185,7 +191,7 @@ class GameRenderer:
         self.screen.blit(rotated, rotated_rect.topleft)
 
     def display_track(self, env):
-        self.screen.blit(env.track.image, (0,0))
+        self.screen.blit(env.track.image, (0, 0))
 
     def _draw_panel(self, x, y, width, height):
         overlay = pygame.Surface((width, height), pygame.SRCALPHA)
@@ -201,28 +207,25 @@ class GameRenderer:
             return f"{value:.{decimals}f}{suffix}"
         return str(value)
 
-
-    #Draw car sensors
+    # Draw car sensors
     def draw_sensors(self, env, screen, sensor_points):
-
         car_pos = (int(env.car.x), int(env.car.y))
 
         for point in sensor_points:
-
             px = int(point[0])
             py = int(point[1])
 
             pygame.draw.line(
                 screen,
-                (0,255,0),
+                (0, 255, 0),
                 car_pos,
                 (px, py),
-                2
+                2,
             )
 
             pygame.draw.circle(
                 screen,
-                (255,0,0),
+                (255, 0, 0),
                 (px, py),
-                4
+                4,
             )

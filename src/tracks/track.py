@@ -1,8 +1,8 @@
 class Track:
     """
-    Classe base para todos os tipos de pista.
+    Base class for all track types.
 
-    Cada pista deve implementar:
+    Each track must implement:
     - is_on_track
     - progress_logic
     - reset_progress_state
@@ -24,14 +24,14 @@ class Track:
 
     def draw_track(self, surface):
         """
-        Desenha a pista.
-        Nem todas precisam implementar (ex: image track).
+        Draws the track.
+        Not all tracks need to implement it (e.g. image-based track).
         """
         pass
 
     def draw_debug(self, surface):
         """
-        Debug visual opcional.
+        Optional visual debug.
         """
         pass
 
@@ -41,10 +41,10 @@ class Track:
 
     def is_on_track(self, x, y):
         """
-        Verifica se o carro está na pista.
+        Checks whether the car is on the track.
         """
         raise NotImplementedError(
-            f"{self.__class__.__name__} precisa implementar is_on_track()"
+            f"{self.__class__.__name__} must implement is_on_track()"
         )
 
     # ---------------------------------
@@ -53,40 +53,40 @@ class Track:
 
     def reset_progress_state(self):
         """
-        Retorna estado inicial de progresso.
+        Returns the initial progress state.
         """
         raise NotImplementedError(
-            f"{self.__class__.__name__} precisa implementar reset_progress_state()"
+            f"{self.__class__.__name__} must implement reset_progress_state()"
         )
 
     def progress_logic(self, state, last_pos, current_pos):
         """
-        Atualiza progresso da volta.
+        Updates lap progress.
 
-        Retorna:
+        Returns:
         new_state, crossed_finish
         """
         raise NotImplementedError(
-            f"{self.__class__.__name__} precisa implementar progress_logic()"
+            f"{self.__class__.__name__} must implement progress_logic()"
         )
 
     def is_lap_complete(self, state):
         """
-        Verifica se completou a volta.
+        Checks whether the lap is complete.
         """
         raise NotImplementedError(
-            f"{self.__class__.__name__} precisa implementar is_lap_complete()"
+            f"{self.__class__.__name__} must implement is_lap_complete()"
         )
 
     def get_progress_features(self, car_pos, car_angle, progress_state):
         """
-        Retorna uma representação unificada de progresso e alinhamento.
+        Returns a unified representation of progress and alignment.
 
         progress: 0.0 -> 1.0
         angle_to_target: -1.0 -> 1.0
         """
         raise NotImplementedError(
-            f"{self.__class__.__name__} precisa implementar get_progress_features()"
+            f"{self.__class__.__name__} must implement get_progress_features()"
         )
 
     # ---------------------------------
@@ -95,7 +95,7 @@ class Track:
 
     def reset_car(self, car):
         """
-        Reseta carro na posição inicial.
+        Resets the car to the initial position.
         """
         car.x = self.spawn_position[0]
         car.y = self.spawn_position[1]
@@ -110,7 +110,7 @@ class Track:
 
     def draw_progress(self, screen, env):
         """
-        UI de progresso (opcional).
+        Optional progress UI.
         """
         pass
 
